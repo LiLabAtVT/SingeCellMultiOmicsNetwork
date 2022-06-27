@@ -1,0 +1,100 @@
+---
+title: "RNA-seq find marker gene"
+output: html_document
+date: '2022-06-20'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Create scRNA-seq UMAP
+```{r}
+# Load the directory #-----#-----#-----#
+setwd("~/Downloads/check_jun22") 
+#**************************************#
+#
+#
+# Load all libraries #-----#-----#-----#
+library(Seurat); library(Matrix); library(tidyverse)
+#***************************************#
+#
+# Combine 3 non-mutant samples together.
+fileNames = c( "Sample_WT-WERGFP", "Sample_WT-WERGFP_2", "Sample_WT-WERGFP_3")
+data_sample = c()
+for(i in fileNames){
+  matrix = readMM(file = paste0(i, "/filtered_gene_bc_matrices/TAIR10/matrix.mtx"))
+  rownames(matrix) = read.delim(file = paste0(i, "/filtered_gene_bc_matrices/TAIR10/genes.tsv"), header = FALSE, stringsAsFactors = FALSE)$V1
+  colnames(matrix) = read.delim(file = paste0(i, "/filtered_gene_bc_matrices/TAIR10/barcodes.tsv"), header = FALSE, stringsAsFactors = FALSE)$V1
+  data_sample <- c(data_sample, matrix)
+}
+ATH_data = cbind(data_sample[[1]], data_sample[[2]], data_sample[[3]]) # Combine data by columns
+#
+# Create seurat object for RNA-seq data
+Rna <- CreateSeuratObject(ATH_data)
+Rna <- FindVariableFeatures(object = Rna, selection.method = "vst", verbose = FALSE)
+Rna <- NormalizeData(Rna)
+Rna <- ScaleData(Rna, features = rownames(ATH_data))
+Rna <- RunPCA(Rna, features = VariableFeatures(object = Rna) ,verbose = FALSE)
+Rna <- FindNeighbors(Rna, reduction = "pca", dims = 1:31) 
+Rna <- FindClusters(Rna, resolution = 0.55) 
+Rna <- RunUMAP(Rna, reduction = "pca", dims = 1:31) 
+DimPlot(Rna, reduction = "umap", label = TRUE) 
+#saveRDS(Rna, "ara_clusters_042222.rds")
+#***************************************#
+```
+
+```{r}
+cellType = read.csv("/Users/tranchau/Downloads/check_jun22/spMarker_folder/changed_ara_cellname_woMu.csv", row.names = 1)
+Rna@meta.data$celltype = cellType$seurat_clusters
+DimPlot(Rna, reduction = "umap", group.by = "celltype", label = TRUE, repel = TRUE) + NoLegend()
+head(Rna@meta.data, 5)
+```
+
+
+
+
+```{r}
+# Rename idents before finding marker genes
+Idents(Rna) <- cellType$seurat_clusters
+allMG = FindAllMarkers(Rna, min.pct = 0.1, logfc.threshold = 0.25)
+#saveRDS(allMG, file = "Rna_allMG.rds")
+top200MG = allMG %>% group_by(cluster) %>% top_n(n=200, wt = avg_log2FC)
+#saveRDS(top200MG[top200MG$cluster == "Cortex",]$gene, file = "Rna_Cortex_200.rds")
+#saveRDS(top200MG[top200MG$cluster == "Endodermis",]$gene, file = "Rna_Endodermis_200.rds")
+```
+
+# Atac Marker genes
+
+```{r}
+Atac = readRDS(gunzip("GSM5281420_Dorrity_etal_scATAC_root.rds.gz", remove = FALSE))
+DefaultAssay(Atac) <- "geneactivity"
+DimPlot(Atac, reduction = "umap") + NoLegend()
+DimPlot(Atac, group.by = "cell_type", label = TRUE, repel = TRUE, reduction = "umap") + NoLegend()
+head(Atac@meta.data,5)
+
+# Rename clusters
+Idents(Atac) = Atac@meta.data$cell_type
+allMG_Atac = FindAllMarkers(Atac, min.pct = 0.1, logfc.threshold = 0.25)
+#saveRDS(allMG_Atac[allMG_Atac$cluster == "cortex" | allMG_Atac$cluster == "endodermis sub-type 1" | allMG_Atac$cluster == "endodermis sub-type 2" | allMG_Atac$cluster == "endodermis sub-type 3",]$gene, file = "Atac_Cortex_3Edodermis.rds")
+```
+
+
+```{r}
+integration = readRDS("~/Downloads/check_jun22/Integration_062022.rds")
+DimPlot(integration, group.by = "celltype", label = TRUE, repel = TRUE)
+```
+```{r}
+Idents(integration) = integration@meta.data$celltype
+
+allMG_integration = FindAllMarkers(integration, min.pct = 0.1, logfc.threshold = 0.25)
+
+#saveRDS(allMG_integration, "allMG_integration_062022.rds")
+top200MG_integration = allMG_integration %>% group_by(cluster) %>% top_n(n=200, wt = avg_log2FC)
+#saveRDS(top200MG_integration[top200MG_integration$cluster == "Cortex",]$gene, file = "integration_Cortex_200.rds")
+#saveRDS(top200MG_integration[top200MG_integration$cluster == "Endodermis",]$gene, file = "integration_Endodermis_200.rds")
+```
+
+
+
+
