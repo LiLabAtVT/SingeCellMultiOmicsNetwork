@@ -114,7 +114,7 @@ DimPlot(Embedding, group.by = "celltype", label = TRUE, repel = TRUE)
 ```
 
 
-https://satijalab.org/seurat/archive/v3.1/atacseq_integration_vignette.html
+
 
 
 
