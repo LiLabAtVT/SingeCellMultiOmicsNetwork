@@ -42,7 +42,7 @@ Rna <- RunUMAP(Rna, reduction = "pca", dims = 1:31)
 DimPlot(Rna, reduction = "umap", label = TRUE) 
 
 #***************************************#
-cellType = read.csv(cell_type_file, row.names = 1)
+cellType = read.csv("RNA_cellType.csv", row.names = 1)
 Rna@meta.data$celltype = cellType$seurat_clusters
 DimPlot(Rna, reduction = "umap", group.by = "celltype", label = TRUE, repel = TRUE)
 head(Rna@meta.data, 5)
