@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Create scRNA-seq UMAP
 ```{r}
 # Load the directory #-----#-----#-----#
-setwd("~/Downloads/check_jun22") 
+setwd(your_working_directory) 
 #**************************************#
 #
 #
@@ -39,11 +39,11 @@ Rna <- RunPCA(Rna, features = VariableFeatures(object = Rna) ,verbose = FALSE)
 Rna <- FindNeighbors(Rna, reduction = "pca", dims = 1:31) 
 Rna <- FindClusters(Rna, resolution = 0.55) 
 Rna <- RunUMAP(Rna, reduction = "pca", dims = 1:31) 
-#DimPlot(Rna, reduction = "umap", label = TRUE) 
-#saveRDS(Rna, "ara_clusters_042222.rds")
+DimPlot(Rna, reduction = "umap", label = TRUE) 
+
 #***************************************#
 
-cellType = read.csv("/Users/tranchau/Downloads/check_jun22/spMarker_folder/changed_ara_cellname_woMu.csv", row.names = 1)
+cellType = read.csv(cell_type_file, row.names = 1)
 Rna@meta.data$celltype = cellType$seurat_clusters
 DimPlot(Rna, reduction = "umap", group.by = "celltype", label = TRUE, repel = TRUE)
 head(Rna@meta.data, 5)
@@ -54,7 +54,7 @@ head(Rna@meta.data, 5)
 ```{r}
 par(mfrow = c(1,2))
 Atac = readRDS(gunzip("GSM5281420_Dorrity_etal_scATAC_root.rds.gz", remove = FALSE))
-DimPlot(Atac, reduction = "umap") +NoLegend()
+DimPlot(Atac, reduction = "umap") + NoLegend()
 DimPlot(Atac, group.by = "cell_type", label = TRUE, repel = TRUE, reduction = "umap") +NoLegend()
 head(Atac@meta.data,5)
 ```
@@ -93,8 +93,8 @@ imputation <- TransferData(anchorset = transferAnchors,
                            refdata = GetAssayData(Rna, assay = "RNA", slot = "data")[rownames(Rna), ], 
                            weight.reduction = Atac[["lsi"]], dims = 2:30)
 Atac[["RNA"]] <- imputation
-Atac
-Rna
+
+
 # merge two data sets
 Embedding <- merge(x = Rna, y = Atac)
 Embedding <- ScaleData(Embedding, features = rownames(Rna), do.scale = FALSE)
@@ -110,7 +110,6 @@ DimPlot(Embedding, group.by = c("tech"))
 
 Embedding$celltype <- ifelse(!is.na(Embedding$celltype), Embedding$celltype, Embedding$predicted.id)
 DimPlot(Embedding, group.by = "celltype", label = TRUE, repel = TRUE)
-#saveRDS(Embedding, "Integration_062022.rds")
 ```
 
 
