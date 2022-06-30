@@ -57,7 +57,9 @@ DimPlot(Atac, reduction = "umap") +NoLegend()
 DimPlot(Atac, group.by = "cell_type", label = TRUE, repel = TRUE, reduction = "umap") +NoLegend()
 head(Atac@meta.data,5)
 ```
-## 
+
+
+
 ```{r}
 DefaultAssay(Atac) <- "geneactivity"
 Atac <- NormalizeData(Atac)
