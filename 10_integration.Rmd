@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Create scRNA-seq UMAP
 ```{r}
 # Load the directory #-----#-----#-----#
-setwd("~/Downloads/check_jun22") 
+setwd(your_working_directory) 
 #**************************************#
 #
 #
@@ -39,11 +39,10 @@ Rna <- RunPCA(Rna, features = VariableFeatures(object = Rna) ,verbose = FALSE)
 Rna <- FindNeighbors(Rna, reduction = "pca", dims = 1:31) 
 Rna <- FindClusters(Rna, resolution = 0.55) 
 Rna <- RunUMAP(Rna, reduction = "pca", dims = 1:31) 
-#DimPlot(Rna, reduction = "umap", label = TRUE) 
-#saveRDS(Rna, "ara_clusters_042222.rds")
-#***************************************#
+DimPlot(Rna, reduction = "umap", label = TRUE) 
 
-cellType = read.csv("/Users/tranchau/Downloads/check_jun22/spMarker_folder/changed_ara_cellname_woMu.csv", row.names = 1)
+#***************************************#
+cellType = read.csv(cell_type_file, row.names = 1)
 Rna@meta.data$celltype = cellType$seurat_clusters
 DimPlot(Rna, reduction = "umap", group.by = "celltype", label = TRUE, repel = TRUE)
 head(Rna@meta.data, 5)
@@ -75,16 +74,8 @@ transferAnchors <- FindTransferAnchors(reference = Rna, query = Atac, features =
                                        reduction = "cca")
 
 celltype_pred <- TransferData(anchorset = transferAnchors, refdata = Rna$celltype, weight.reduction = Atac[["lsi"]], dims = 2:30)
-head(celltype_pred, 5)
-Atac <- AddMetaData(Atac, metadata = celltype_pred)
+Atac <- AddMetaData(Atac, metadata = celltype_pred) # Predict scATAC-seq cell type
 
-
-AtacFiltered <- subset(Atac, subset = prediction.score.max > 0.5)
-hist(Atac$prediction.score.max)
-abline(v = 0.5, col = "red")
-
-DimPlot(AtacFiltered, group.by = "predicted.id", label = TRUE, repel = TRUE) 
-DimPlot(Rna, group.by = "celltype", label = TRUE, repel = TRUE) + NoLegend()
 ```
 
 ## Co-embedding 2 datasets together
@@ -93,8 +84,8 @@ imputation <- TransferData(anchorset = transferAnchors,
                            refdata = GetAssayData(Rna, assay = "RNA", slot = "data")[rownames(Rna), ], 
                            weight.reduction = Atac[["lsi"]], dims = 2:30)
 Atac[["RNA"]] <- imputation
-Atac
-Rna
+
+
 # merge two data sets
 Embedding <- merge(x = Rna, y = Atac)
 Embedding <- ScaleData(Embedding, features = rownames(Rna), do.scale = FALSE)
@@ -114,7 +105,7 @@ DimPlot(Embedding, group.by = "celltype", label = TRUE, repel = TRUE)
 ```
 
 
-https://satijalab.org/seurat/archive/v3.1/atacseq_integration_vignette.html
+
 
 
 
