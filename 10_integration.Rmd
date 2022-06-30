@@ -101,7 +101,7 @@ DimPlot(Embedding, group.by = c("tech"))
 
 Embedding$celltype <- ifelse(!is.na(Embedding$celltype), Embedding$celltype, Embedding$predicted.id)
 DimPlot(Embedding, group.by = "celltype", label = TRUE, repel = TRUE)
-#saveRDS(Embedding, "Integration_062022.rds")
+saveRDS(Embedding, "Integration_062022.rds")
 ```
 
 
